@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://anutravels-8at4.vercel.app/sitemap.xml
