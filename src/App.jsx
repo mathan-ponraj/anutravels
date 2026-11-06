@@ -1,15 +1,15 @@
 import { useRef, useState } from "react";
-import { BUSINESS as B, CATEGORIES, PACKAGES, REASONS } from "./data";
+import { BUSINESS as B, CABS, CATEGORIES, FAQS, PACKAGES, REASONS } from "./data";
 
 const inr = (n) => "₹" + n.toLocaleString("en-IN");
 const ALL = { id: "all", name: "All Packages", image: "/images/all.svg", g: "linear-gradient(135deg,#2c3f35,#0b1612)" };
 const MAXP = Math.max(...PACKAGES.map((p) => p.price));
 
 // Photo with gradient fallback: if the file is missing the image hides itself.
-function Photo({ src, g, className, children }) {
+function Photo({ src, g, className, alt, children }) {
   return (
     <div className={className} style={{ backgroundImage: g }}>
-      <img src={src} alt="" loading="lazy" onError={(e) => (e.currentTarget.style.display = "none")} />
+      <img src={src} alt={alt || ""} loading="lazy" onError={(e) => (e.currentTarget.style.display = "none")} />
       {children}
     </div>
   );
@@ -98,7 +98,7 @@ export default function App() {
       <header className="nav">
         <a href="#top" className="logo">{B.name}</a>
         <nav>
-          <a href="#packages">Packages</a><a href="#why">Why us</a><a href="#contact">Contact</a>
+          <a href="#packages">Packages</a><a href="#cabs">Cab booking</a><a href="#faq">FAQ</a><a href="#contact">Contact</a>
           <a className="btn sm" href={`https://wa.me/${B.whatsapp}`}>WhatsApp</a>
         </nav>
       </header>
@@ -106,7 +106,7 @@ export default function App() {
       <section className="hero" id="top">
         <div className="mist" aria-hidden="true" />
         <div className="wrap">
-          <h1>Munnar in the monsoon, planned by locals.</h1>
+          <h1>Munnar tour packages and cab booking, planned by locals.</h1>
           <p>{B.tagline}</p>
           <a className="btn" href="#packages">View packages</a>
         </div>
@@ -130,7 +130,7 @@ export default function App() {
           </div>
           <h2>Munnar Tour Packages</h2>
           <p className="quote">“Travel is the only thing you buy that makes you richer.”</p>
-          <p className="blurb">Short paragraph about the packages, the hills and what makes a trip with {B.name} different. Replace this text later.</p>
+          <p className="blurb">{B.name} is a Munnar travel agency offering 1, 2 and 3 day Munnar tour packages, Kolukkumalai jeep safari, Kundala Dam and Mattupetty sightseeing, Vattavada visits, off-road trips, resort stays and luxury pool villas. Replace this text with the owner’s own words.</p>
         </div>
 
         <div className="railwrap">
@@ -138,7 +138,7 @@ export default function App() {
           <div className="rail" ref={rail}>
             {[ALL, ...CATEGORIES].map((c) => (
               <button key={c.id} className={"tile" + (cat === c.id ? " on" : "")} onClick={() => { setCat(c.id); setDestDraft(c.id); }}>
-                <Photo src={c.image} g={c.g} className="tphoto"><span>{c.name}</span></Photo>
+                <Photo src={c.image} g={c.g} alt={`${c.name} Munnar`} className="tphoto"><span>{c.name}</span></Photo>
               </button>
             ))}
           </div>
@@ -178,7 +178,7 @@ export default function App() {
               const c = CATEGORIES.find((x) => x.id === p.cat);
               return (
                 <article className="card" key={p.id}>
-                  <Photo src={c.image} g={c.g} className="img" />
+                  <Photo src={c.image} g={c.g} alt={`${p.title} in Munnar`} className="img" />
                   <div className="body">
                     <span className="tag">{c.name}</span>
                     <h3>{p.title} <small>{p.nights} {p.nights === 1 ? "Night" : "Nights"} · {p.days} {p.days === 1 ? "Day" : "Days"}</small></h3>
@@ -199,11 +199,32 @@ export default function App() {
         </div>
       </main>
 
+      <section className="wrap sec" id="cabs">
+        <h2>Munnar cab booking</h2>
+        <p className="blurb">Airport transfers from Kochi, local sightseeing taxis and group travel across Munnar. Replace this text with the owner’s own words.</p>
+        <div className="cabs">
+          {CABS.map((c) => (
+            <div className="cab" key={c.route}>
+              <h3>{c.route}</h3>
+              <p>{c.vehicle}</p>
+              <small>{c.note}</small>
+              <strong>From {inr(c.price)}</strong>
+              <a className="btn" href={`https://wa.me/${B.whatsapp}?text=${encodeURIComponent("Hi, I want to book a cab: " + c.route)}`}>Book on WhatsApp</a>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <section className="why" id="why">
         <div className="wrap sec">
           <h2>Why travel with {B.name}</h2>
           <div className="grid">{REASONS.map((r) => <div key={r.t}><h3>{r.t}</h3><p>{r.d}</p></div>)}</div>
         </div>
+      </section>
+
+      <section className="wrap sec" id="faq">
+        <h2>Munnar travel questions</h2>
+        {FAQS.map((f) => <details className="faq" key={f.q}><summary>{f.q}</summary><p>{f.a}</p></details>)}
       </section>
 
       <section className="wrap sec contact" id="contact">

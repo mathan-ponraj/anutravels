@@ -42,3 +42,20 @@ export const REASONS = [
   { t: "Custom plans", d: "Change days, hotels or activities to fit your group." },
   { t: "One-call support", d: "Reach the owner directly on call or WhatsApp." },
 ];
+
+// Cab booking rates (placeholders). Edit freely.
+export const CABS = [
+  { route: "Kochi Airport (COK) to Munnar", vehicle: "Sedan / SUV", price: 4500, note: "About 4 to 5 hours, one way" },
+  { route: "Munnar local sightseeing (full day)", vehicle: "Sedan / SUV", price: 3500, note: "8 hours, up to 80 km" },
+  { route: "Munnar to Thekkady", vehicle: "SUV", price: 4000, note: "One way" },
+  { route: "Group transfer", vehicle: "Tempo Traveller (12 seats)", price: 7500, note: "Per day, fuel extra" },
+];
+
+// FAQ shown on the page and read by Google. Replace answers with the owner's real information.
+export const FAQS = [
+  { q: "What is the best time to visit Munnar?", a: "Write the owner's advice here: for example, September to March for cool weather, and June to August for the monsoon mist." },
+  { q: "How far is Munnar from Kochi airport?", a: "Write the distance and travel time here, and mention that Anu Travels arranges airport pickup." },
+  { q: "Do you arrange trips for international guests?", a: "Yes. Write about pickup, English-speaking drivers, payment methods and anything else foreign guests ask." },
+  { q: "How do I book a Munnar cab or tour package?", a: "Send an enquiry from this page or message us on WhatsApp. We reply with a quote, usually within 24 hours." },
+  { q: "Can the packages be customised?", a: "Yes. Tell us your dates, group size and budget and we will adjust the plan." },
+];
