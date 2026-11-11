@@ -1,52 +1,317 @@
-import { useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { BUSINESS as B, CABS, CATEGORIES, FAQS, PACKAGES, REASONS } from "./data";
 
 const inr = (n) => "₹" + n.toLocaleString("en-IN");
-const ALL = { id: "all", name: "All Packages", image: "/images/all.svg", g: "linear-gradient(135deg,#2c3f35,#0b1612)" };
-const MAXP = Math.max(...PACKAGES.map((p) => p.price));
+const routeOf = () => location.hash.replace(/^#\/?/, "");
+const scrollToId = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+const HOME_TITLE = document.title;
+const tel = (p) => "tel:" + p.replace(/\s/g, "");
 
-// Photo with gradient fallback: if the file is missing the image hides itself.
-function Photo({ src, g, className, alt, children }) {
+// Simple hash routing: "#/" is home, "#/adventure" is the Adventure packages page.
+function useRoute() {
+  const [route, setRoute] = useState(routeOf);
+  useEffect(() => {
+    const onChange = () => { setRoute(routeOf()); window.scrollTo({ top: 0, behavior: "instant" }); };
+    window.addEventListener("hashchange", onChange);
+    return () => window.removeEventListener("hashchange", onChange);
+  }, []);
+  return route;
+}
+
+// Jump to a section; if it is not on this page, go home first.
+function goSection(e, id) {
+  e.preventDefault();
+  if (document.getElementById(id)) return scrollToId(id);
+  location.hash = "#/";
+  setTimeout(() => scrollToId(id), 150);
+}
+
+// Photo with gradient fallback: if the file is missing, the image hides itself.
+function Photo({ src, g, alt, className = "", children }) {
   return (
-    <div className={className} style={{ backgroundImage: g }}>
+    <div className={"ph " + className} style={{ backgroundImage: g }}>
+      <span className="soon">Photo coming soon</span>
       <img src={src} alt={alt || ""} loading="lazy" onError={(e) => (e.currentTarget.style.display = "none")} />
       {children}
     </div>
   );
 }
 
-function Pines() {
-  const row = (fill, gap, base, seed) =>
-    Array.from({ length: 40 }, (_, i) => {
-      const x = i * gap - 20, h = base + ((i * seed) % 70);
-      return <path key={i} fill={fill} d={`M${x} 220 L${x + 26} ${220 - h} L${x + 52} 220Z M${x + 6} 220 L${x + 26} ${220 - h * 0.7} L${x + 46} 220Z`} />;
-    });
+const ICONS = {
+  phone: "M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11 11 0 0 0 3.5.56 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.2.2 2.4.56 3.5a1 1 0 0 1-.25 1z",
+  mail: "M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm9 7L4 7v1.5l8 5 8-5V7z",
+  pin: "M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z",
+};
+const Ico = ({ d, size = 18 }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true">
+    <path fill="currentColor" d={d} />
+  </svg>
+);
+
+// Transparent over the photo, solid olive once you scroll.
+function Header() {
+  const [solid, setSolid] = useState(false);
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setSolid(window.scrollY > 40);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  const go = (id) => (e) => { setOpen(false); goSection(e, id); };
+
   return (
-    <svg className="pines" viewBox="0 0 1440 220" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
-      {row("#12301f", 46, 80, 37)}{row("#0a1f15", 38, 55, 53)}<rect y="205" width="1440" height="15" fill="#08140e" />
-    </svg>
+    <header className={"nav" + (solid || open ? " solid" : "") + (open ? " open" : "")}>
+      <div className="nav-in">
+        <a href="#/" className="logo" aria-label={B.name} onClick={() => setOpen(false)}>
+          <b>{B.logoMain}</b>
+          <small>{B.logoSub}</small>
+        </a>
+        <button className="burger" aria-label="Menu" aria-expanded={open} onClick={() => setOpen(!open)}>
+          <span /><span /><span />
+        </button>
+        <nav>
+          <a href="#/" onClick={go("trips")}>Trips</a>
+          <a href="#/" onClick={go("about")}>About</a>
+          <a href="#/" onClick={go("cabs")}>Cab booking</a>
+          <a href="#/" onClick={go("faq")}>FAQ</a>
+          <a href="#/" onClick={go("contact")}>Contact</a>
+        </nav>
+      </div>
+    </header>
   );
 }
 
-function EnquiryForm({ selected }) {
+function Home() {
+  return (
+    <>
+      <section className="hero">
+        <img
+          className="hero-img"
+          src={B.hero}
+          fetchpriority="high"
+          alt={`Misty tea hills of Munnar, Kerala, with ${B.name}`}
+          onError={(e) => (e.currentTarget.style.display = "none")}
+        />
+        <div className="hero-shade" aria-hidden="true" />
+        <div className="wrap hero-in">
+          <p className="hero-kicker">{B.heroKicker}</p>
+          <h1>
+            {B.heroTitle}
+            <span className="sr"> with {B.name}: Munnar tour packages and cab booking</span>
+          </h1>
+          <p className="hero-text">{B.tagline}</p>
+          <div className="hero-acts">
+            <a className="pill" href="#/" onClick={(e) => goSection(e, "trips")}>Our trips</a>
+            <a className="pill solid" href={tel(B.phones[0])}>Call now</a>
+          </div>
+        </div>
+      </section>
+
+      <section className="info" aria-label="Contact details">
+        <div className="wrap info-in">
+          <div className="info-item">
+            <Ico d={ICONS.phone} />
+            <span>
+              <small>Call us</small>
+              {B.phones.map((p) => <a key={p} href={tel(p)}>{p}</a>)}
+            </span>
+          </div>
+          <div className="info-item">
+            <Ico d={ICONS.mail} />
+            <span>
+              <small>Email</small>
+              <a href={"mailto:" + B.email}>{B.email}</a>
+            </span>
+          </div>
+          <div className="info-item">
+            <Ico d={ICONS.pin} />
+            <span>
+              <small>Visit us</small>
+              <em>{B.address}</em>
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <section className="sec sage" id="trips">
+        <div className="wrap">
+          <h2 className="center">Pick your kind of trip</h2>
+          <p className="lead center">Choose a style and see the Munnar packages we plan for it.</p>
+          <div className="cats">
+            {CATEGORIES.map((c) => (
+              <a key={c.id} className="cat" href={`#/${c.id}`} aria-label={`${c.name} packages`}>
+                <Photo src={c.image} g={c.g} alt={`${c.name} in Munnar`} />
+                <h3>{c.name}</h3>
+                <p>{c.tag}</p>
+                <span className="pill dark sm">Explore</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="sec pale" id="about">
+        <div className="wrap split">
+          <Photo src={B.aboutImage} g="linear-gradient(160deg,#6f8062,#313d2a)" alt={`${B.name} tempo traveller at a resort in Munnar`} className="split-img" />
+          <div className="split-txt">
+            <h2>{B.aboutTitle}</h2>
+            {B.about.map((t) => <p key={t}>{t}</p>)}
+            <ul className="svc">{B.services.map((s) => <li key={s}>{s}</li>)}</ul>
+            <a className="pill dark" href="#/" onClick={(e) => goSection(e, "contact")}>Plan your trip</a>
+          </div>
+        </div>
+      </section>
+
+      <section className="sec olive">
+        <div className="wrap">
+          <h2 className="center">Why travel with {B.name}</h2>
+          <div className="grid">
+            {REASONS.map((r) => (
+              <div key={r.t}><h3>{r.t}</h3><p>{r.d}</p></div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="sec sage" id="cabs">
+        <div className="wrap">
+          <h2 className="center">Munnar cab booking</h2>
+          <p className="lead center">Airport transfers from Kochi, local sightseeing taxis and group travel across Munnar. Replace this text with the owner’s own words.</p>
+          <div className="cablist">
+            {CABS.map((c) => (
+              <div className="cab" key={c.route}>
+                <h3>{c.route}</h3>
+                <span>{c.vehicle}<small>{c.note}</small></span>
+                <strong>From {inr(c.price)}</strong>
+                <a className="pill dark sm" href={`https://wa.me/${B.whatsapp}?text=${encodeURIComponent("Hi, I want to book a cab: " + c.route)}`}>Book on WhatsApp</a>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="sec pale" id="faq">
+        <div className="wrap narrow">
+          <h2 className="center">Munnar travel questions</h2>
+          {FAQS.map((f) => (
+            <details className="faq" key={f.q}>
+              <summary>{f.q}</summary>
+              <p>{f.a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+    </>
+  );
+}
+
+function CategoryPage({ cat, onEnquire }) {
+  const [dur, setDur] = useState(0);
+  const [sort, setSort] = useState("rec");
+  const all = PACKAGES.filter((p) => p.cat === cat.id);
+  const durations = [...new Set(all.map((p) => p.days))].sort((a, b) => a - b);
+  let list = all.filter((p) => !dur || p.days === dur);
+  if (sort === "price") list = [...list].sort((a, b) => a.price - b.price);
+  if (sort === "duration") list = [...list].sort((a, b) => a.days - b.days);
+
+  return (
+    <>
+      <section className="banner">
+        <Photo src={cat.image} g={cat.g} alt={`${cat.name} in Munnar`} />
+        <div className="wrap">
+          <a className="back" href="#/">‹ All trip types</a>
+          <h1>{cat.name}</h1>
+          <p>{cat.blurb}</p>
+        </div>
+      </section>
+
+      <main className="sec pale" id="packages">
+        <div className="wrap">
+          <div className="tools">
+            <div className="pills" role="group" aria-label="Trip length">
+              <button className={!dur ? "on" : ""} onClick={() => setDur(0)}>All</button>
+              {durations.map((d) => (
+                <button key={d} className={dur === d ? "on" : ""} onClick={() => setDur(d)}>{d} Days</button>
+              ))}
+            </div>
+            <label className="sort">Sort by
+              <select value={sort} onChange={(e) => setSort(e.target.value)}>
+                <option value="rec">Recommended</option>
+                <option value="price">Price, low to high</option>
+                <option value="duration">Duration</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="pkgs">
+            {list.map((p) => (
+              <article className="pkg" key={p.id}>
+                <Photo src={cat.image} g={cat.g} alt={`${p.title} in Munnar`}>
+                  <span className="badge">{p.nights} {p.nights === 1 ? "Night" : "Nights"}, {p.days} Days</span>
+                </Photo>
+                <div className="pkg-body">
+                  <h3>{p.title}</h3>
+                  <ul className="chips">{p.includes.map((i) => <li key={i}>{i}</li>)}</ul>
+                  <ul className="hl">{p.highlights.map((h) => <li key={h}>{h}</li>)}</ul>
+                </div>
+                <div className="pkg-foot">
+                  <div className="price"><strong>{inr(p.price)}</strong><s>{inr(p.oldPrice)}</s><small>per person</small></div>
+                  <div className="acts">
+                    <button className="pill sm solid" onClick={() => onEnquire(p.title)}>Enquire now</button>
+                    <a className="pill sm" href={`https://wa.me/${B.whatsapp}?text=${encodeURIComponent("Hi, I am interested in " + p.title)}`}>WhatsApp</a>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <h3 className="morehead">Other trip types</h3>
+          <div className="pills">
+            {CATEGORIES.filter((c) => c.id !== cat.id).map((c) => (
+              <a key={c.id} href={`#/${c.id}`}>{c.name}</a>
+            ))}
+          </div>
+        </div>
+      </main>
+    </>
+  );
+}
+
+function useSend() {
   const [state, setState] = useState("idle");
-  async function onSubmit(e) {
+  async function send(e) {
     e.preventDefault();
+    const form = e.target;
     setState("sending");
-    const data = Object.fromEntries(new FormData(e.target));
+    const data = Object.fromEntries(new FormData(form));
     try {
       const res = await fetch("https://api.web3forms.com/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ access_key: B.web3formsKey, subject: `New enquiry – ${data.name}`, from_name: "Anu Travels Website", ...data }),
+        body: JSON.stringify({ access_key: B.web3formsKey, subject: `New enquiry – ${data.name}`, from_name: `${B.name} Website`, ...data }),
       });
       const json = await res.json();
-      if (json.success) { setState("done"); e.target.reset(); } else setState("error");
-    } catch { setState("error"); }
+      if (json.success) { setState("done"); form.reset(); } else setState("error");
+    } catch {
+      setState("error");
+    }
   }
-  if (state === "done") return <div className="done"><h3>Enquiry sent</h3><p>Thank you. We will reply within 24 hours.</p></div>;
+  return [state, send];
+}
+
+function EnquiryForm({ selected }) {
+  const [state, send] = useSend();
+  if (state === "done") {
+    return (
+      <div className="done">
+        <h3>Enquiry sent</h3>
+        <p>Thank you. We will reply within 24 hours.</p>
+      </div>
+    );
+  }
   return (
-    <form onSubmit={onSubmit} className="form">
+    <form onSubmit={send} className="form">
       <input type="checkbox" name="botcheck" style={{ display: "none" }} tabIndex="-1" />
       <label>Full name<input name="name" required /></label>
       <label>Email<input name="email" type="email" required /></label>
@@ -62,181 +327,67 @@ function EnquiryForm({ selected }) {
       <label>Adults<input name="adults" type="number" min="1" defaultValue="2" /></label>
       <label>Children<input name="children" type="number" min="0" defaultValue="0" /></label>
       <label className="wide">Message<textarea name="message" rows="3" placeholder="Tell us what you have in mind" /></label>
-      <button className="btn" disabled={state === "sending"}>{state === "sending" ? "Sending…" : "Send enquiry"}</button>
+      <button className="pill solid wide" disabled={state === "sending"}>{state === "sending" ? "Sending…" : "Send enquiry"}</button>
       {state === "error" && <p className="err">Could not send. Please call or WhatsApp us instead.</p>}
     </form>
   );
 }
 
 export default function App() {
-  const [cat, setCat] = useState("all");
-  const [destDraft, setDestDraft] = useState("all");
-  const [sort, setSort] = useState("choice");
-  const [maxPrice, setMaxPrice] = useState(MAXP);
-  const [durs, setDurs] = useState([]);
-  const [cats, setCats] = useState([]);
+  const route = useRoute();
   const [pick, setPick] = useState("");
-  const [copied, setCopied] = useState(false);
-  const rail = useRef(null);
-  const active = CATEGORIES.find((c) => c.id === cat);
+  const cat = CATEGORIES.find((c) => c.id === route);
 
-  let list = PACKAGES.filter((p) =>
-    (cat === "all" || p.cat === cat) && p.price <= maxPrice &&
-    (!durs.length || durs.includes(p.days)) && (!cats.length || cats.includes(p.cat)));
-  if (sort === "price") list = [...list].sort((a, b) => a.price - b.price);
-  if (sort === "duration") list = [...list].sort((a, b) => a.days - b.days);
+  useEffect(() => {
+    document.title = cat ? `${cat.name} Munnar packages | ${B.name}` : HOME_TITLE;
+  }, [cat]);
 
-  const toggle = (arr, set, v) => set(arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
-  const clear = () => { setMaxPrice(MAXP); setDurs([]); setCats([]); setCat("all"); setDestDraft("all"); };
-  const scroll = (n) => rail.current.scrollBy({ left: n * 520, behavior: "smooth" });
-  const share = async () => {
-    try { if (navigator.share) await navigator.share({ title: B.name, url: location.href }); else { await navigator.clipboard.writeText(location.href); setCopied(true); setTimeout(() => setCopied(false), 1500); } } catch {}
-  };
+  const enquire = (title) => { setPick(title); scrollToId("contact"); };
 
   return (
     <>
-      <header className="nav">
-        <a href="#top" className="logo">{B.name}</a>
-        <nav>
-          <a href="#packages">Packages</a><a href="#cabs">Cab booking</a><a href="#faq">FAQ</a><a href="#contact">Contact</a>
-          <a className="btn sm" href={`https://wa.me/${B.whatsapp}`}>WhatsApp</a>
-        </nav>
-      </header>
+      <Header />
+      {cat ? <CategoryPage key={cat.id} cat={cat} onEnquire={enquire} /> : <Home />}
 
-      <section className="hero" id="top">
-        <div className="mist" aria-hidden="true" />
-        <div className="wrap">
-          <h1>Munnar tour packages and cab booking, planned by locals.</h1>
-          <p>{B.tagline}</p>
-          <a className="btn" href="#packages">View packages</a>
-        </div>
-        <Pines />
-      </section>
-
-      <main className="wrap" id="packages">
-        <p className="crumb"><a href="#top">Home</a> › <b>Munnar Tour Packages</b></p>
-
-        <div className="summary">
-          <div className="srow">
-            <label><span>Destination</span>
-              <select value={destDraft} onChange={(e) => setDestDraft(e.target.value)}>
-                <option value="all">All Munnar packages</option>
-                {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            </label>
-            <label><span>Start date</span><input type="month" /></label>
-            <button className="share" onClick={share} aria-label="Share this page">{copied ? "Copied" : "Share"}</button>
-            <button className="btn" onClick={() => setCat(destDraft)}>Modify search</button>
+      <section className="sec olive dark" id="contact">
+        <div className="wrap contact">
+          <div>
+            <h2>Plan your trip</h2>
+            <p className="lead">Send your dates and we will reply with a quote.</p>
+            <p className="cdet">
+              <b>Phone</b>
+              {B.phones.map((p) => <a key={p} href={tel(p)}>{p}</a>)}
+              <b>Email</b>
+              <a href={"mailto:" + B.email}>{B.email}</a>
+              <b>Office</b>
+              <span>{B.address}</span>
+            </p>
           </div>
-          <h2>Munnar Tour Packages</h2>
-          <p className="quote">“Travel is the only thing you buy that makes you richer.”</p>
-          <p className="blurb">{B.name} is a Munnar travel agency offering 1, 2 and 3 day Munnar tour packages, Kolukkumalai jeep safari, Kundala Dam and Mattupetty sightseeing, Vattavada visits, off-road trips, resort stays and luxury pool villas. Replace this text with the owner’s own words.</p>
+          <EnquiryForm selected={pick} />
         </div>
+      </section>
 
-        <div className="railwrap">
-          <button className="arrow l" onClick={() => scroll(-1)} aria-label="Scroll left">‹</button>
-          <div className="rail" ref={rail}>
-            {[ALL, ...CATEGORIES].map((c) => (
-              <button key={c.id} className={"tile" + (cat === c.id ? " on" : "")} onClick={() => { setCat(c.id); setDestDraft(c.id); }}>
-                <Photo src={c.image} g={c.g} alt={`${c.name} Munnar`} className="tphoto"><span>{c.name}</span></Photo>
-              </button>
-            ))}
+      <footer className="foot">
+        <div className="wrap foot-in">
+          <div className="foot-brand">
+            <b>{B.logoMain}</b>
+            <small>{B.logoSub}</small>
           </div>
-          <button className="arrow r" onClick={() => scroll(1)} aria-label="Scroll right">›</button>
+          <ul>
+            <li><a href="#/" onClick={(e) => goSection(e, "trips")}>Trips</a></li>
+            <li><a href="#/" onClick={(e) => goSection(e, "about")}>About</a></li>
+            <li><a href="#/" onClick={(e) => goSection(e, "cabs")}>Cab booking</a></li>
+            <li><a href="#/" onClick={(e) => goSection(e, "faq")}>FAQ</a></li>
+            <li><a href="#/" onClick={(e) => goSection(e, "contact")}>Contact</a></li>
+          </ul>
+          <ul>
+            <li><a href={"mailto:" + B.email}>{B.email}</a></li>
+            {B.phones.map((p) => <li key={p}><a href={tel(p)}>{p}</a></li>)}
+            <li>{B.address}</li>
+          </ul>
         </div>
-
-        <div className="layout">
-          <aside className="filter">
-            <div className="fhead"><h3>Filter</h3><button onClick={clear}>Clear</button></div>
-            <div className="fblock">
-              <div className="fhead"><b>Budget</b><button onClick={() => setMaxPrice(MAXP)}>Reset</button></div>
-              <input type="range" min="1000" max={MAXP} step="500" value={maxPrice} onChange={(e) => setMaxPrice(+e.target.value)} />
-              <small>Up to {inr(maxPrice)}</small>
-            </div>
-            <div className="fblock">
-              <div className="fhead"><b>Duration</b><button onClick={() => setDurs([])}>Reset</button></div>
-              {[1, 2, 3].map((d) => <label key={d} className="chk"><input type="checkbox" checked={durs.includes(d)} onChange={() => toggle(durs, setDurs, d)} />{d} {d === 1 ? "Day" : "Days"}</label>)}
-            </div>
-            <div className="fblock">
-              <div className="fhead"><b>Category</b><button onClick={() => setCats([])}>Reset</button></div>
-              {CATEGORIES.map((c) => <label key={c.id} className="chk"><input type="checkbox" checked={cats.includes(c.id)} onChange={() => toggle(cats, setCats, c.id)} />{c.name}</label>)}
-            </div>
-          </aside>
-
-          <section>
-            <div className="sortbar">
-              <b>Sort by</b>
-              {[["choice", `${B.name} Choice`], ["duration", "Duration"], ["price", "Price"]].map(([k, l]) => (
-                <button key={k} className={sort === k ? "on" : ""} onClick={() => setSort(k)}>{l}</button>
-              ))}
-              <a className="promo" href={`https://wa.me/${B.whatsapp}`}>Custom plan? Chat on WhatsApp</a>
-            </div>
-            <p className="count">{active ? `${active.name}: ${active.blurb} ` : ""}Showing {list.length} trips</p>
-
-            {list.length === 0 && <p className="empty">No trips match these filters. Click Clear to start again.</p>}
-            {list.map((p) => {
-              const c = CATEGORIES.find((x) => x.id === p.cat);
-              return (
-                <article className="card" key={p.id}>
-                  <Photo src={c.image} g={c.g} alt={`${p.title} in Munnar`} className="img" />
-                  <div className="body">
-                    <span className="tag">{c.name}</span>
-                    <h3>{p.title} <small>{p.nights} {p.nights === 1 ? "Night" : "Nights"} · {p.days} {p.days === 1 ? "Day" : "Days"}</small></h3>
-                    <p className="inc">{p.includes.join("   ·   ")}</p>
-                    <ul>{p.highlights.map((h) => <li key={h}>{h}</li>)}</ul>
-                  </div>
-                  <div className="buy">
-                    <span className="off">Upto 10% Off</span>
-                    <span className="per">Per Person</span>
-                    <strong>{inr(p.price)} <s>{inr(p.oldPrice)}</s></strong>
-                    <a className="btn" href="#contact" onClick={() => setPick(p.title)}>Enquire now</a>
-                    <a className="ghost" href={`https://wa.me/${B.whatsapp}?text=${encodeURIComponent("Hi, I am interested in " + p.title)}`}>WhatsApp</a>
-                  </div>
-                </article>
-              );
-            })}
-          </section>
-        </div>
-      </main>
-
-      <section className="wrap sec" id="cabs">
-        <h2>Munnar cab booking</h2>
-        <p className="blurb">Airport transfers from Kochi, local sightseeing taxis and group travel across Munnar. Replace this text with the owner’s own words.</p>
-        <div className="cabs">
-          {CABS.map((c) => (
-            <div className="cab" key={c.route}>
-              <h3>{c.route}</h3>
-              <p>{c.vehicle}</p>
-              <small>{c.note}</small>
-              <strong>From {inr(c.price)}</strong>
-              <a className="btn" href={`https://wa.me/${B.whatsapp}?text=${encodeURIComponent("Hi, I want to book a cab: " + c.route)}`}>Book on WhatsApp</a>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="why" id="why">
-        <div className="wrap sec">
-          <h2>Why travel with {B.name}</h2>
-          <div className="grid">{REASONS.map((r) => <div key={r.t}><h3>{r.t}</h3><p>{r.d}</p></div>)}</div>
-        </div>
-      </section>
-
-      <section className="wrap sec" id="faq">
-        <h2>Munnar travel questions</h2>
-        {FAQS.map((f) => <details className="faq" key={f.q}><summary>{f.q}</summary><p>{f.a}</p></details>)}
-      </section>
-
-      <section className="wrap sec contact" id="contact">
-        <div>
-          <h2>Plan your trip</h2>
-          <p>Send your dates and we will reply with a quote.</p>
-          <p><b>Phone:</b> {B.phone}<br /><b>Email:</b> {B.email}<br /><b>Office:</b> {B.address}</p>
-        </div>
-        <EnquiryForm selected={pick} />
-      </section>
-
-      <footer>© {new Date().getFullYear()} {B.name}, {B.address}</footer>
+        <p className="copy">© {new Date().getFullYear()} {B.name}</p>
+      </footer>
     </>
   );
 }
